@@ -4,7 +4,7 @@
 - [PlusCal @ wiki](https://en.wikipedia.org/wiki/PlusCal)
 - [tlaplus / PlusCalCheatSheet](https://github.com/tlaplus/PlusCalCheatSheet)
 
-## Tutorial
+## Tutorials
 - [The PlusCal Tutorial; Leslie Lamport](http://lamport.azurewebsites.net/tla/tutorial/home.html)
 
 - [learntla.com](https://learntla.com/introduction/)
