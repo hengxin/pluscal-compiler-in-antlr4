@@ -1,0 +1,32 @@
+--algorithm test {
+    variables m=30, n=18, u=m, v=n, v_ini=v;
+
+    define {
+    Divides(i,j) == \E k \in 0..j : j = i * k
+    IsGCD(i,j,k) == Divides(i,j) /\ Divides(i,k) /\ \A r \in 0..j \cup 0..k : Divides(r,j) /\ Divides(r,k) => Divides(r,i)
+    }
+
+    procedure p1(v1=1, v2)
+    variables v11_, v22_=3; {
+        p1_: v1 := v2 || v22_ := v11;
+        p2_: return;
+    }
+    procedure p2(q1, q2, q3)
+    variables v11, v22;
+    {
+        q0:call p1(q1, q2);
+        q1:assert q1 > 0;
+        return;
+    }
+     process (p = 1) {
+        bela: while (u # 0) {
+          iff: if (u < v)
+            u := v || v := u;
+          tmp: u := u - v;
+        };
+        print <<m,v_ini,"have gdc",v>>;
+        call p2(1,2,3);
+        (* correctness condition *)
+        L0: assert IsGCD(v,m,n);
+      }
+}
