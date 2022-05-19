@@ -39,9 +39,9 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         currentProcedure = "";
     }
 
-    public static void translate(AlgorithmContext ctx) {
+    public static TlaPlusSpec translate(AlgorithmContext ctx) {
         new PlusCalTranslator().visitAlgorithm(ctx);
-        TlaPlusSpec.translateFrom(ctx).print();
+        return TlaPlusSpec.translateFrom(ctx);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         });
 
         if (!ctx.procedure().isEmpty()) {
-            Logger.logInfo("Spec should EXTENDS Sequences");
+            PlusCalLogger.logInfo("Spec should EXTENDS Sequences");
             for (ProcedureContext procedure: ctx.procedure()) {
                 currentProcedure = procedure.name().getText();
                 visitProcedure(procedure);
@@ -208,12 +208,12 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
                 values.add(lhsContext.getText());
                 variable = resolve(lhsContext.variable().getText(), SymbolType.VARIABLE);
             } catch (SemanticException e) {
-                Logger.reportError(e.getMessage(), ctx);
+                PlusCalLogger.reportError(e.getMessage(), ctx);
                 semanticError = true;
             }
         }
         if (values.size() < lhsContexts.size()) {
-            Logger.reportError("cannot assign to the same variable within one step", ctx);
+            PlusCalLogger.reportError("cannot assign to the same variable within one step", ctx);
         }
         return null;
     }
@@ -235,7 +235,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
             define(new NormalVariableSymbol(ctx.variable().getText(), getLine(ctx)));
         }
         catch (DefinitionException e) {
-            Logger.reportError(e.getMessage(), getLine(ctx));
+            PlusCalLogger.reportError(e.getMessage(), getLine(ctx));
             semanticError = true;
         }
         return null;
@@ -256,7 +256,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         try {
             resolve(ctx.label().getText(), SymbolType.LABEL);
         } catch (SymbolResolveException e) {
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         return null;
@@ -267,14 +267,14 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         try {
             resolve(ctx.name().getText(), SymbolType.PROCEDURE, ctx.expr().size());
         } catch (SymbolResolveException e) {
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         try {
             resolve(ctx.label().getText(), SymbolType.LABEL);
         }
         catch (SymbolResolveException e) {
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         return null;
@@ -285,7 +285,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         try {
             resolve(ctx.name().getText(), SymbolType.PROCEDURE, ctx.expr().size());
         } catch (SymbolResolveException e) {
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         return null;
@@ -296,7 +296,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         try {
             resolve(ctx.name().getText(), SymbolType.PROCEDURE, ctx.expr().size());
         } catch (SymbolResolveException e) {
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         if (currentProcedure.equals("")) {
@@ -340,7 +340,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
             resolve(opName, SymbolType.OPERATOR, ctx.argument().size());
 //            System.out.println("find operator " + postfixExpr.getText());
         } catch (SemanticException e) {
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         return super.visitOperatorCall(ctx);

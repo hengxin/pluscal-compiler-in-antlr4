@@ -1,7 +1,6 @@
 package com.PlusCal.interp.pretreatment;
 
-import com.PlusCal.interp.Logger;
-import com.PlusCal.interp.RuleContextUtils;
+import com.PlusCal.interp.PlusCalLogger;
 import com.PlusCal.interp.symbol.DefinitionException;
 import com.PlusCal.interp.symbol.SymbolResolveException;
 import com.PlusCal.parser.PlusCalParser;
@@ -130,7 +129,7 @@ final class Macros {
         private static boolean checkStmt(StmtContext stmtDef) {
             boolean b = true;
             if (labeled(stmtDef)) {
-                Logger.reportError("a macro definition may contain no labels",
+                PlusCalLogger.reportError("a macro definition may contain no labels",
                         getLine(stmtDef));
                 b = false;
             }
@@ -138,7 +137,7 @@ final class Macros {
                 // 暂时移去while
                 if (isOneOfStmtType(stmtDef,
                         ReturnContext.class, CallContext.class, GotoContext.class)) {
-                    Logger.reportError("a macro definition may contain no while, call, return or goto statement",
+                    PlusCalLogger.reportError("a macro definition may contain no while, call, return or goto statement",
                             getLine(stmtDef.unLabeledStmt()));
                     return false;
                 }

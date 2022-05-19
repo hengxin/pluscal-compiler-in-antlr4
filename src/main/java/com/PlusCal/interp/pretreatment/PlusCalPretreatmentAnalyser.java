@@ -1,18 +1,14 @@
 package com.PlusCal.interp.pretreatment;
 
-import com.PlusCal.interp.Logger;
+import com.PlusCal.interp.PlusCalLogger;
 import com.PlusCal.interp.SemanticException;
-import com.PlusCal.interp.symbol.SymbolTable;
 import com.PlusCal.parser.PlusCalParser;
 import com.PlusCal.parser.PlusCalParserBaseListener;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Stack;
 
 import static com.PlusCal.parser.PlusCalParser.*;
 import static com.PlusCal.interp.PlusCalParams.*;
@@ -88,7 +84,7 @@ public class PlusCalPretreatmentAnalyser extends PlusCalParserBaseListener {
         }
         catch (SemanticException e){
 
-            Logger.reportError(e.getMessage(), ctx);
+            PlusCalLogger.reportError(e.getMessage(), ctx);
         }
     }
 

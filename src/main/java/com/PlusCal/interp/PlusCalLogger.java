@@ -7,9 +7,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class Logger extends BaseErrorListener {
+public class PlusCalLogger extends BaseErrorListener {
 
-    private static final Logger logger = new Logger();
+    private static final PlusCalLogger logger = new PlusCalLogger();
     private List<Record> records;
 
     private static class Record {
@@ -31,11 +31,11 @@ public class Logger extends BaseErrorListener {
         }
     }
 
-    public static Logger getLogger() {
+    public static PlusCalLogger getLogger() {
         return logger;
     }
 
-    private Logger() { }
+    private PlusCalLogger() { }
 
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer,

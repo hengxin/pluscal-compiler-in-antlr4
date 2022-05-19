@@ -6,7 +6,7 @@ A Compiler for PlusCal in ANTLR4
 
 相应的词法、语法分析器和语法树遍历器已生成，运行时先输入相应的PlusCal源代码（不输入时默认指定test.pluscal），再运行Main.java即可，
 
-相应的结果将输出到控制台，或者输出到源代码所在文件中（正在做），生成的目标代码介于BEGIN TRANSLATION和END TRANSLATION之间。
+相应的结果将输出到控制台，或者输出到源代码所在文件中，生成的目标代码介于BEGIN TRANSLATION和END TRANSLATION之间。
 
 可将生成的代码拷贝到TLA+Toolbox中运行。
 
@@ -51,8 +51,7 @@ A Compiler for PlusCal in ANTLR4
 - [x] while true optimization
 - [x] procedures
     - [x] return stmt
-    - [x] goto stmt
+    - [ ] goto stmt
     - [ ] call return stmt
     - [ ] call goto stmt
 - [x] processes
-```

@@ -985,8 +985,8 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process,
-                               boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+        public String toString(final boolean multi_process, boolean omitPC,
+                               int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuilder sb = new StringBuilder();
             Collection<String> mayChange = getMayChanged();
             unchanged.removeAll(mayChange);
@@ -1031,7 +1031,6 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 sb.append("\"").append(PCNext).append("\"");
             }
             else if (scope instanceof ProcedureSymbol) {
-                // TODO: for procedures
                 sb.append("[pc EXCEPT ![self] = \"").append(PCNext).append("\"]");
             }
             else {
@@ -1135,8 +1134,8 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process,
-                               boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+        public String toString(final boolean multi_process, boolean omitPC,
+                               int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuilder sb = new StringBuilder();
             Collection<String> mayChange = getMayChanged();
             unchanged.removeAll(mayChange);
@@ -1170,7 +1169,10 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                     sb.append(states.get(i).toString(multi_process, omitPC, indent + 3, mayChange, hasChanged));
                 }
                 if (PCNext != null && !PCNext.equals("")) {
-                    sb.append(newLine(jump(PCNext, scope, hasChanged), indent));
+
+                    if (!omitPC) {
+                        sb.append(newLine(jump(PCNext, scope, hasChanged), indent));
+                    }
                 }
                 if (unchanged.size() > 0) {
                     sb.append(newLine("/\\ " + unchanged(unchanged), indent));
@@ -2200,7 +2202,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
             sb.append(toIndentedString(toOriginalText(process.expr), sb.length(), getStartPos(process.expr)));
             if (process.isEqual) {
-                sb.append("{");
+                sb.append("}");
             }
             else {
                 sb.append(")");

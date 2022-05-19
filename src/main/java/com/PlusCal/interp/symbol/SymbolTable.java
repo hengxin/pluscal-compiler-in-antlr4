@@ -1,6 +1,5 @@
 package com.PlusCal.interp.symbol;
 
-import com.PlusCal.interp.Logger;
 import com.PlusCal.interp.SemanticException;
 
 import java.util.*;
