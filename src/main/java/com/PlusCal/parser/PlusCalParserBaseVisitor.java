@@ -1,4 +1,4 @@
-// Generated from D:/final/code/src/main/java/com/PlusCal/grammar\PlusCalParser.g4 by ANTLR 4.9.2
+// Generated from D:/final/pluscal-compiler-in-antlr4/src/main/java/com/PlusCal/grammar\PlusCalParser.g4 by ANTLR 4.9.2
 package com.PlusCal.parser;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -87,13 +87,6 @@ public class PlusCalParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBody(PlusCalParser.BodyContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitCompoundStmt(PlusCalParser.CompoundStmtContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -171,14 +164,14 @@ public class PlusCalParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitReturn(PlusCalParser.ReturnContext ctx) { return visitChildren(ctx); }
+	@Override public T visitCallReturn(PlusCalParser.CallReturnContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitGoto(PlusCalParser.GotoContext ctx) { return visitChildren(ctx); }
+	@Override public T visitCallGoto(PlusCalParser.CallGotoContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -192,14 +185,14 @@ public class PlusCalParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitCallReturn(PlusCalParser.CallReturnContext ctx) { return visitChildren(ctx); }
+	@Override public T visitReturn(PlusCalParser.ReturnContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitCallGoto(PlusCalParser.CallGotoContext ctx) { return visitChildren(ctx); }
+	@Override public T visitGoto(PlusCalParser.GotoContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -1,4 +1,4 @@
-// Generated from D:/final/code/src/main/java/com/PlusCal/grammar\PlusCalLexer.g4 by ANTLR 4.9.2
+// Generated from D:/final/pluscal-compiler-in-antlr4/src/main/java/com/PlusCal/grammar\PlusCalLexer.g4 by ANTLR 4.9.2
 package com.PlusCal.parser;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;

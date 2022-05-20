@@ -1,4 +1,4 @@
-// Generated from D:/final/code/src/main/java/com/PlusCal/grammar\PlusCalParser.g4 by ANTLR 4.9.2
+// Generated from D:/final/pluscal-compiler-in-antlr4/src/main/java/com/PlusCal/grammar\PlusCalParser.g4 by ANTLR 4.9.2
 package com.PlusCal.parser;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -107,16 +107,6 @@ public interface PlusCalParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitProdVarDecl(PlusCalParser.ProdVarDeclContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link PlusCalParser#body}.
-	 * @param ctx the parse tree
-	 */
-	void enterBody(PlusCalParser.BodyContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link PlusCalParser#body}.
-	 * @param ctx the parse tree
-	 */
-	void exitBody(PlusCalParser.BodyContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlusCalParser#compoundStmt}.
 	 * @param ctx the parse tree
@@ -246,42 +236,6 @@ public interface PlusCalParserListener extends ParseTreeListener {
 	 */
 	void exitSkip(PlusCalParser.SkipContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code return}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 */
-	void enterReturn(PlusCalParser.ReturnContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code return}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 */
-	void exitReturn(PlusCalParser.ReturnContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code goto}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 */
-	void enterGoto(PlusCalParser.GotoContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code goto}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 */
-	void exitGoto(PlusCalParser.GotoContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code call}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 */
-	void enterCall(PlusCalParser.CallContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code call}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 */
-	void exitCall(PlusCalParser.CallContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code callReturn}
 	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
 	 * @param ctx the parse tree
@@ -305,6 +259,42 @@ public interface PlusCalParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCallGoto(PlusCalParser.CallGotoContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code call}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterCall(PlusCalParser.CallContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code call}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitCall(PlusCalParser.CallContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code return}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterReturn(PlusCalParser.ReturnContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code return}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitReturn(PlusCalParser.ReturnContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code goto}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterGoto(PlusCalParser.GotoContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code goto}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitGoto(PlusCalParser.GotoContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code macroCall}
 	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.

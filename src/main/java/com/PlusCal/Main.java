@@ -51,7 +51,8 @@ public class Main {
             parser.setTokenStream(tokenStream);
             parser.removeParseListeners();
             TlaPlusSpec spec = PlusCalTranslator.translate(parser.algorithm());
-            spec.writeTo(new File(file));
+//            spec.writeTo(new File(file));
+            spec.print();
             PlusCalLogger.logInfo("----------------------------END TRANSLATION----------------------------");
         }
 

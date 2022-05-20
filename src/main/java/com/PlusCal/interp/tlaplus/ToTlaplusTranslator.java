@@ -2,6 +2,7 @@ package com.PlusCal.interp.tlaplus;
 
 import com.PlusCal.interp.Require;
 import com.PlusCal.interp.symbol.Scope;
+import com.PlusCal.interp.symbol.Symbol;
 import com.PlusCal.interp.symbol.SymbolTable;
 import com.PlusCal.interp.symbol.SymbolType;
 import com.PlusCal.parser.PlusCalParserBaseVisitor;
@@ -167,12 +168,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         if ((vardeclsContext = ctx.procVardecls()) != null) {
             visitProcVardecls(vardeclsContext);
         }
-        if (cSyntax) {
-            return visitCompoundStmt(ctx.compoundStmt());
-        }
-        else {
-            return visitStmtSequence(ctx.body().stmt());
-        }
+        return visitCompoundStmt(ctx.compoundStmt());
     }
 
     @Override
@@ -227,7 +223,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         boolean afterReturn = false;
         while (i < n) {
             stmt = stmts.get(i);
-            Require.require(!isOneOfStmtType(stmt, CallReturnContext.class, CallGotoContext.class), "Not supported");
+//            Require.require(!isOneOfStmtType(stmt, CallGotoContext.class), "Not supported");
             if (labeled(stmt)) {
                 if (!context.equals("")) exitContext();
                 String lbl = stmt.label().Identifier().getText();
@@ -263,12 +259,9 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 cur.add(s.first);
                 i++;
             }
-            if (isStmtType(stmt, CallContext.class)) {
-                CallContext call = (CallContext) stmt.unLabeledStmt();
-                ProcedureSymbol prod = resolve(call.name().getText(), SymbolType.PROCEDURE, call.expr().size());
-                cur.PCNext = prod.getLocalLabels().get(0).name();
-
-                // TODO: init procedure declared variables when call
+            if (isOneOfStmtType(stmt, CallContext.class, CallReturnContext.class)) {
+                CallState callState = (CallState) s.first;
+                cur.callProcedure(callState.procedure);
             }
             if (isOneOfStmtType(stmt, ReturnContext.class, CallReturnContext.class)) {
                 afterReturn = true;
@@ -376,16 +369,15 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
         else {
             // TODO: pSyntax backtrack
-            Pair<State, State> _thenSeq, _elseSeq = null;
-            BranchedState cur = null;
-            BranchedState root = null;
+            Pair<State, State> _thenSeq = null, _elseSeq = null;
+            State root = null;
             List<StmtContext> stmtSeq = new ArrayList<>();
 //            int i = 3; // beginning index of the first statement
 //            while (ctx.getChild(i) instanceof StmtContext) {
 //                stmtSeq.add((StmtContext) ctx.getChild(i));
 //                i++;
 //            }
-            ExprContext expr;
+            ExprContext expr = null;
 
 //            for (; i < ctx.getChildCount(); i++) {
 //                if (ctx.getChild(i) instanceof TerminalNode) {
@@ -424,7 +416,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 //                }
 //            }
 
-            for (int i = ctx.getChildCount() - 3; i >= 0; i++) {
+            for (int i = ctx.getChildCount() - 3; i >= 0; i--) {
                 ParseTree child = ctx.getChild(i);
                 if (child instanceof StmtContext) {
                     stmtSeq.add((StmtContext) child);
@@ -443,13 +435,17 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                     }
                     else if (t.getSymbol().getType() == If || t.getSymbol().getType() == ElseIf) {
                         // TODO
+                        Require.require(_thenSeq != null);
+                        _elseSeq = makePair(new IfState(getContext(), curScope, expr, _thenSeq, _elseSeq));
+                        if (t.getSymbol().getType() == If) {
+                            root = _elseSeq.first;
+                        }
                     }
                 }
                 else if (child instanceof ExprContext) {
                     expr = (ExprContext) child;
                 }
             }
-
 
             return makePair(root);
         }
@@ -460,8 +456,6 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
     public Pair<State, State> visitWhile(WhileContext ctx) {
         Pair<State, State> ps = visitStmtSequence(ctx.stmt());
         class WhileState extends BranchedState {
-
-
             /**
              * permit that the THEN statement and ELSE statement must be a conjunction list
              */
@@ -776,112 +770,71 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
     @Override
     public Pair<State, State> visitCall(CallContext ctx) {
-        return makePair(new State(getContext(), curScope) {
-            private final List<ExprContext> params = ctx.expr();
-            private final ProcedureSymbol procedure =
-                    resolve(ctx.name().getText(), SymbolType.PROCEDURE, params.size());
-
-            @Override
-            public Collection<String> getMayChanged() {
-                return getMustChanged();
-            }
-
-            @Override
-            public Collection<String> getMustChanged() {
-                Collection<String> c = getNamesOfLocalElements(procedure);
-                c.add("stack");
-                return c;
-            }
-
-            @Override
-            public String toString(boolean multi_process, boolean omitPC, int indent,
-                                   Collection<String> unchanged, Collection<String> hasChanged) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("/\\ stack' = ");
-                if (multi_process) {
-                    sb.append("[stack EXCEPT ![self] = << [ ");
-                }
-                else {
-                    sb.append("<< [ ");
-                }
-                final int stackValueBeginIndent = indent + sb.length();
-                sb.append("procedure |-> \"").append(procedure.name()).append("\"");
-                if (!omitPC) {
-                    sb.append(",");
-                    sb.append(newLine("pc |-> \"" + PCNext + "\"", stackValueBeginIndent));
-                }
-                for (String var: getMustChanged()) {
-                    sb.append(",");
-                    String map = var + " |-> " + var;
-                    sb.append(newLine(map, stackValueBeginIndent));
-                    if (multi_process) {
-                        String self;
-                        if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
-                            self = indentedExpr(((ProcessSymbol) scope).expr, stackValueBeginIndent + map.length() + 1);
-                        }
-                        else {
-                            self = "self";
-                        }
-                        sb.append("[").append(self).append("]");
-                    }
-                }
-                sb.append(" >> ]");
-                sb.append(newLine("\\o stack", stackValueBeginIndent - 4));
-                if (multi_process) {
-                    String self;
-                    if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
-                        self = indentedExpr(((ProcessSymbol) scope).expr, stackValueBeginIndent + 5);
-                    }
-                    else {
-                        self = "self";
-                    }
-                    sb.append("[").append(self).append("]");
-                }
-                sb.append("]");
-                StringBuilder forEachParam;
-                for (int i = 0; i < procedure.getParameterCount(); i++) {
-                    NormalVariableSymbol v = procedure.getParameter(i);
-                    forEachParam = new StringBuilder();
-                    forEachParam.append("/\\ ").append(v.name()).append("' = ");
-                    if (multi_process) {
-                        forEachParam.append("[").append(v.name()).append(" EXCEPT ![");
-                        String self;
-                        if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
-                            self = indentedExpr(((ProcessSymbol) scope).expr, forEachParam.length());
-                        }
-                        else {
-                            self = "self";
-                        }
-                        forEachParam.append(self).append("] = ");
-                        forEachParam.append(indentedExpr(ctx.expr(i), forEachParam.length())).append("]");
-                    }
-                    else {
-                        forEachParam.append(indentedExpr(ctx.expr(i), forEachParam.length()));
-                    }
-                    sb.append(newLine(forEachParam.toString(), indent));
-                }
-                return sb.toString();
-            }
-
-            @Override
-            public boolean backTrack(String PCNext) {
-                this.PCNext = PCNext;
-                return true;
-            }
-        });
+        return makePair(new CallState(getContext(), curScope,
+                ctx.name().getText(), ctx.expr()));
     }
 
     @Override
     public Pair<State, State> visitCallGoto(CallGotoContext ctx) {
         mightOmitPC = false;
         // TODO:
-        return super.visitCallGoto(ctx);
+        CallState callState = new CallState(getContext(), curScope,
+                ctx.name().getText(), ctx.expr());
+        callState.backTrack(resolve(ctx.label().getText(), SymbolType.LABEL).name());
+        return makePair(callState);
     }
 
     @Override
     public Pair<State, State> visitCallReturn(CallReturnContext ctx) {
         // TODO:
-        return super.visitCallReturn(ctx);
+        return makePair(new CallState(getContext(), curScope,
+                ctx.name().getText(), ctx.expr()) {
+            @Override
+            public Collection<String> getMustChanged() {
+                Collection<String> c = super.getMustChanged();
+                ProcedureContext p = ((ProcedureSymbol) scope).defContext;
+                if (p.prodVarDecls() != null) {
+                    for (ProdVarDeclContext vardecl: p.prodVarDecls().prodVarDecl()) {
+                        c.add(scope.getLocal(vardecl.variable().getText()).name());
+                    }
+                }
+                return c;
+            }
+
+            @Override
+            public String toString(boolean multi_process, boolean omitPC, int indent,
+                                   Collection<String> unchanged, Collection<String> hasChanged) {
+                this.PCNext = multi_process ? "Head(stack[self]).pc" : "Head(stack).pc";
+                StringBuilder sb = new StringBuilder(
+                        super.toString(multi_process, omitPC, indent, unchanged, hasChanged));
+                Collection<String> c = new ArrayList<>();
+                ProcedureContext p = ((ProcedureSymbol) scope).defContext;
+                if (p.prodVarDecls() != null) {
+                    for (ProdVarDeclContext vardecl: p.prodVarDecls().prodVarDecl()) {
+                        c.add(scope.getLocal(vardecl.variable().getText()).name());
+                    }
+                }
+                unchanged.removeAll(c);
+                hasChanged.removeAll(c);
+                for (String var: c) {
+                    if (sb.length() == 0) {
+                        sb.append("/\\ ");
+                    }
+                    else {
+                        sb.append(newLine("/\\ ", indent));
+                    }
+                    sb.append(var).append("' = ");
+                    if (multi_process) {
+                        sb.append("[").append(var).append(" EXCEPT ![self] = Head(stack[self]).")
+                                .append(var).append("]");
+                    }
+                    else {
+                        sb.append("Head(stack).").append(var);
+                    }
+                }
+                return sb.toString();
+            }
+        });
     }
 
     @Override
@@ -948,15 +901,18 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
     private static class ConjunctionList extends State {
         protected final List<State> states;
+        protected ProcedureSymbol procedureCalled;
 
         protected ConjunctionList(String context, Scope scope) {
             super(context, scope);
             states = new ArrayList<>();
+            procedureCalled = null;
         }
 
         protected ConjunctionList(String context, Scope scope, State...state) {
             super(context, scope);
             states = new ArrayList<>(Arrays.asList(state));
+            procedureCalled = null;
         }
 
         @Override
@@ -1002,14 +958,12 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             if (PCNext != null && !PCNext.equals("")) {
-                if (false) {
-                    //
-                }
+                sb.append(initCalledProcedureVariables(indent));
                 if (!omitPC) {
                     if (!onlyJump()) {
                         sb.append(newLine("", indent));
                     }
-                    sb.append(jump(PCNext, scope, hasChanged));
+                    sb.append(jump(PCNext, scope, multi_process, hasChanged));
                 }
             }
 
@@ -1019,15 +973,57 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             return sb.toString();
         }
 
+        final String initCalledProcedureVariables(int indent) {
+            StringBuilder sb = new StringBuilder();
+            if (procedureCalled != null) {
+                ProcedureContext p = procedureCalled.defContext;
+                if (p.prodVarDecls() != null) {
+                    StringBuilder forEachDeclared;
+                    for (ProdVarDeclContext pvardecl: p.prodVarDecls().prodVarDecl()) {
+                        forEachDeclared = new StringBuilder("/\\ ");
+                        String variable = procedureCalled.getLocal(pvardecl.variable().getText()).name();
+                        if (multi_process) {
+                            forEachDeclared.append(variable).append("' = [")
+                                    .append(variable).append(" EXCEPT ![");
+                            String self;
+                            if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
+                                self = indentedExpr(((ProcessSymbol) scope).expr, indent + forEachDeclared.length());
+                            }
+                            else {
+                                self = "self";
+                            }
+                            forEachDeclared.append(self).append("] = ");
+                        }
+                        else {
+                            forEachDeclared.append(variable).append("' = ");
+                        }
+                        String value = pvardecl.expr() == null ?
+                                "defaultInitValue" : indentedExpr(pvardecl.expr(), forEachDeclared.length());
+                        forEachDeclared.append(value);
+                        if (multi_process) {
+                            forEachDeclared.append("]");
+                        }
+                        sb.append(newLine(forEachDeclared.toString(), indent));
+                    }
+                }
+            }
+            return sb.toString();
+        }
+
         protected boolean onlyJump() {
             return states.isEmpty() && PCNext != null && !PCNext.equals("");
         }
 
+        public void callProcedure(ProcedureSymbol procedure) {
+            this.procedureCalled = procedure;
+            this.PCNext = procedure.getLocalLabels().get(0).name();
+        }
 
-        protected static String jump(final String PCNext, final Scope scope, final Collection<String> hasChanged) {
+        protected static String jump(final String PCNext, final Scope scope,
+                                     final boolean multi_process, final Collection<String> hasChanged) {
             StringBuilder sb = new StringBuilder();
             sb.append("/\\ pc' = ");
-            if (scope == GLOBAL) {
+            if (!multi_process || scope == GLOBAL) {
                 sb.append("\"").append(PCNext).append("\"");
             }
             else if (scope instanceof ProcedureSymbol) {
@@ -1063,6 +1059,9 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
         @Override
         public boolean backTrack(String PCNext) {
+            if (context.equals("bela")) {
+                new String();
+            }
             boolean b = false;
             if (!states.isEmpty()){
                 b = states.get(states.size() - 1).backTrack(PCNext);
@@ -1105,18 +1104,12 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 sb.append(states.get(0).toString(multi_process, true, indent, unchanged, new ArrayList<>()));
             }
             else {
-                if (scope == GLOBAL) {
+                if (!multi_process || scope == GLOBAL) {
                     sb.append("/\\ pc = \"").append(getName()).append("\"");
                 }
-                else if (scope instanceof ProcessSymbol) {
+                else if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
                     ProcessSymbol p = (ProcessSymbol) scope;
-                    String self;
-                    if (p.isEqual) {
-                        self = toIndentedString(toOriginalText(p.expr), "/\\ pc[".length(), getStartPos(p.expr));
-                    }
-                    else {
-                        self = "self";
-                    }
+                    String self = toIndentedString(toOriginalText(p.expr), "/\\ pc[".length(), getStartPos(p.expr));
                     sb.append("/\\ pc[").append(self).append("] = \"").append(getName()).append("\"");
                 }
                 else {
@@ -1169,9 +1162,9 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                     sb.append(states.get(i).toString(multi_process, omitPC, indent + 3, mayChange, hasChanged));
                 }
                 if (PCNext != null && !PCNext.equals("")) {
-
+                    sb.append(initCalledProcedureVariables(indent));
                     if (!omitPC) {
-                        sb.append(newLine(jump(PCNext, scope, hasChanged), indent));
+                        sb.append(newLine(jump(PCNext, scope, multi_process, hasChanged), indent));
                     }
                 }
                 if (unchanged.size() > 0) {
@@ -1181,7 +1174,108 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
             return sb.toString();
         }
+    }
 
+    private static class CallState extends State {
+        private final List<ExprContext> params;
+        private final ProcedureSymbol procedure;
+
+        CallState(String context, Scope scope,
+                         String calledProcedure, List<ExprContext> procedureParams) {
+            super(context, scope);
+            this.params = procedureParams;
+            this.procedure = resolve(calledProcedure, SymbolType.PROCEDURE, params.size());
+        }
+
+        @Override
+        public Collection<String> getMayChanged() {
+            return getMustChanged();
+        }
+
+        @Override
+        public Collection<String> getMustChanged() {
+            Collection<String> c = getNamesOfLocalElements(procedure);
+            c.add("stack");
+            return c;
+        }
+
+        @Override
+        public String toString(boolean multi_process, boolean omitPC, int indent,
+                               Collection<String> unchanged, Collection<String> hasChanged) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("/\\ stack' = ");
+            if (multi_process) {
+                sb.append("[stack EXCEPT ![self] = << [ ");
+            }
+            else {
+                sb.append("<< [ ");
+            }
+            final int stackValueBeginIndent = indent + sb.length();
+            sb.append("procedure |-> \"").append(procedure.name()).append("\"");
+            if (!omitPC) {
+                sb.append(",");
+                sb.append(newLine("pc |-> " + PCNext + "", stackValueBeginIndent));
+            }
+            for (String var: getNamesOfLocalElements(procedure)) {
+                sb.append(",");
+                String map = var + " |-> " + var;
+                sb.append(newLine(map, stackValueBeginIndent));
+                if (multi_process) {
+                    String self;
+                    if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
+                        self = indentedExpr(((ProcessSymbol) scope).expr, stackValueBeginIndent + map.length() + 1);
+                    }
+                    else {
+                        self = "self";
+                    }
+                    sb.append("[").append(self).append("]");
+                }
+            }
+            sb.append(" ] >>");
+            sb.append(newLine("\\o stack", stackValueBeginIndent - 4));
+            if (multi_process) {
+                String self;
+                if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
+                    self = indentedExpr(((ProcessSymbol) scope).expr, stackValueBeginIndent + 5);
+                }
+                else {
+                    self = "self";
+                }
+                sb.append("[").append(self).append("]");
+            }
+            sb.append("]");
+            StringBuilder forEachParam;
+            for (int i = 0; i < procedure.getParameterCount(); i++) {
+                NormalVariableSymbol v = procedure.getParameter(i);
+                forEachParam = new StringBuilder();
+                forEachParam.append("/\\ ").append(v.name()).append("' = ");
+                if (multi_process) {
+                    forEachParam.append("[").append(v.name()).append(" EXCEPT ![");
+                    String self;
+                    if (scope instanceof ProcessSymbol && ((ProcessSymbol) scope).isEqual) {
+                        self = indentedExpr(((ProcessSymbol) scope).expr, forEachParam.length());
+                    }
+                    else {
+                        self = "self";
+                    }
+                    forEachParam.append(self).append("] = ");
+                    forEachParam.append(indentedExpr(params.get(i), forEachParam.length())).append("]");
+                }
+                else {
+                    forEachParam.append(indentedExpr(params.get(i), forEachParam.length()));
+                }
+                sb.append(newLine(forEachParam.toString(), indent));
+            }
+            return sb.toString();
+        }
+
+        @Override
+        public boolean backTrack(String PCNext) {
+            if (this.PCNext == null || this.PCNext.equals("")) {
+                this.PCNext = "\"" + PCNext + "\"";
+            }
+            return true;
+        }
     }
 
     private static class Init {
@@ -1306,7 +1400,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                         sb.append(toIndentedString(toOriginalText(value), sb.length(), getStartPos(value))).append("]");
                     }
                     else {
-                        sb.append(" defaultInitValue]");
+                        sb.append("defaultInitValue]");
                     }
                 }
                 else {
@@ -1412,7 +1506,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             unchanged.remove(variable);
             // TODO: 等号右边智能加括号（现在还是无脑加）
             StringBuilder sb = new StringBuilder(variable + "' = ");
-            if (varScope == GLOBAL ||
+            if (!multi_process || varScope == GLOBAL ||
                     (varScope instanceof ProcessSymbol && ((ProcessSymbol) varScope).isEqual)) {
                 if (this.lhs != null && this.lhs.children.size() > 1) {
                     sb.append("[").append(variable).append(" EXCEPT !");
@@ -1573,9 +1667,9 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                     _else.PCNext = PCNext;
                     return true;
                 }
-                if (!(_else.PCNext == null || _else.PCNext.equals(""))) {
-                    return true;
-                }
+//                if (!(_else.PCNext == null || _else.PCNext.equals(""))) {
+//                    return true;
+//                }
                 return _else.backTrack(PCNext);
             }
             return false;
@@ -1827,7 +1921,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             out.append(genTermination()).append("\n");
         }
 
-        out.append("--------------------------------------END TRANSLATION--------------------------------------");
+        out.append("--------------------------------------END TRANSLATION--------------------------------------\n");
     }
 
     private String genVarDeclAndDefs() {
@@ -1913,7 +2007,15 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             init.initStack(multi_process);
         }
         if (!mightOmitPC) {
-            init.initPC(multi_process, actions.values().stream().map(l -> l.get(0).getName()).toArray(String[]::new));
+            if (multi_process) {
+                init.initPC(true, actions.entrySet().stream()
+                        .filter(e -> !(e.getKey() instanceof ProcedureSymbol))
+                        .map(e -> e.getValue().get(0).getName())
+                        .toArray(String[]::new));
+            }
+            else {
+                init.initPC(false, actions.get(GLOBAL).get(0).getName());
+            }
         }
         return init.toString();
     }
@@ -1928,7 +2030,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 StringBuilder forEachAction;
                 List<Action> l = actions.get(s);
                 String self;
-                if (s == GLOBAL || (s instanceof ProcessSymbol && ((ProcessSymbol) s).isEqual)) {
+                if (!multi_process || s == GLOBAL || (s instanceof ProcessSymbol && ((ProcessSymbol) s).isEqual)) {
                     self = "";
                 }
                 else {

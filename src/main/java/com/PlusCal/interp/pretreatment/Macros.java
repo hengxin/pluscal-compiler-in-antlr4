@@ -72,7 +72,7 @@ final class Macros {
             this.name = name;
             this.line = line;
             this.ctx = ctx;
-            hasError = !(cSyntax? validDefinition(ctx.compoundStmt().stmt()) : validDefinition(ctx.body().stmt()));
+            hasError = !validDefinition(ctx.compoundStmt().stmt());
             if (hasError) {
                 throw new DefinitionException("Error macro definition");
             }

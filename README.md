@@ -51,7 +51,8 @@ A Compiler for PlusCal in ANTLR4
 - [x] while true optimization
 - [x] procedures
     - [x] return stmt
-    - [ ] goto stmt
-    - [ ] call return stmt
-    - [ ] call goto stmt
+    - [x] goto stmt
+    - [x] call return stmt
+    - [x] call goto stmt
 - [x] processes
+- [ ] auto name changing

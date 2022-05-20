@@ -119,6 +119,11 @@ public final class SymbolType<S extends Symbol> {
         }
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
     public Symbol defineSymbolOfType(S symbol) {
         if (!assertion.test(symbol)) {
             // TODO: assertion

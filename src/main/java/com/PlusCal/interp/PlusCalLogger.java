@@ -3,36 +3,21 @@ package com.PlusCal.interp;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PlusCalLogger extends BaseErrorListener {
 
-    private static final PlusCalLogger logger = new PlusCalLogger();
-    private List<Record> records;
-
-    private static class Record {
-        final String msg;
-        long timestamp;
-
-        private Record(String text) {
-            this.msg = text;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder buf = new StringBuilder();
-            buf.append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS").format(new Date(timestamp)));
-            buf.append(" ");
-            buf.append(msg);
-            return buf.toString();
-        }
-    }
+    private static final PlusCalLogger pcalLogger = new PlusCalLogger();
 
     public static PlusCalLogger getLogger() {
-        return logger;
+        return pcalLogger;
+    }
+
+    private static Logger logger = Logger.getLogger("PlusCalCompiler");
+
+    static {
+        logger.setLevel(Level.ALL);
     }
 
     private PlusCalLogger() { }
@@ -64,7 +49,7 @@ public class PlusCalLogger extends BaseErrorListener {
     }
 
     public static void logInfo(String word) {
-        System.out.println(word);
+        logger.info(word);
     }
 
     public static void reportError(String msg, ParserRuleContext ctx) {
@@ -73,6 +58,14 @@ public class PlusCalLogger extends BaseErrorListener {
 
     public static void reportError(String msg, TerminalNode terminalNode) {
         reportError(msg, terminalNode.getSymbol().getLine());
+    }
+
+    public static void warning(String msg) {
+        logger.warning(msg);
+    }
+
+    public static void warning(String msg, int line) {
+        logger.warning("line " + line + ": " + msg);
     }
 
     public static void reportError(String msg, int line) {

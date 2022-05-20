@@ -105,30 +105,43 @@ public final class SymbolTable implements Scope {
      */
     public static <T extends Symbol> T resolve(String symbol,
                                                SymbolType<T> symbolType,
-                                               int params)
+                                               int params, boolean requireNonNull)
             throws SymbolResolveException {
         if (symbolType == LABEL && (symbol.equals("Done") || symbol.equals("Error")))
             throw new SymbolResolveException("Done or Error cannot be used as actual labels");
 
         T target = symbolType.getSymbolOfType(symbol);
         String typeName = symbolType.name;
-        if (target == null)
+        if (requireNonNull && target == null)
             throw new SymbolResolveException("undefined " + typeName + " \"" + symbol + "\"");
 
         if (target instanceof ParameterizedSymbol) {
             ParameterizedSymbol operator = (ParameterizedSymbol) target;
             int argNum = operator.getParameterCount();
-            if (argNum != params)
-                throw new SymbolResolveException(symbolType.name + " " + symbol +
-                        " should contain " + argNum + " parameters");
+            if (argNum != params) {
+                if (requireNonNull) {
+                    throw new SymbolResolveException(symbolType.name + " " + symbol +
+                            " should contain " + argNum + " parameters");
+                }
+                return null;
+            }
         }
 
         return target;
     }
 
-
     public static <T extends AbstractSymbol> T resolve(String symbol, SymbolType<T> symbolType) {
-        return resolve(symbol, symbolType, 0);
+        return resolve(symbol, symbolType, 0, true);
+    }
+
+    public static <T extends Symbol> T resolve(String symbol,
+                                               SymbolType<T> symbolType,
+                                               int params) {
+        return resolve(symbol, symbolType, params, true);
+    }
+
+    public static <T extends Symbol> boolean ifDefined(String symbol, SymbolType<T> symbolType) {
+        return resolve(symbol, symbolType, 0, false) != null;
     }
 
     public static void defineParameter(VariableSymbol paramSymbol) {
@@ -202,15 +215,24 @@ public final class SymbolTable implements Scope {
      */
     public static class NormalVariableSymbol extends AbstractSymbol<NormalVariableSymbol>
             implements VariableSymbol<NormalVariableSymbol> {
-
         private static NormalVariableSymbol SUBSCRIPT_FORMAL_PARAM = new NormalVariableSymbol("_");
+        public final Boolean isEqual;
+        public final ExprContext initialValue;
 
         NormalVariableSymbol(String name) {
-            this(name, PREDEFINED_LINENO);
+            this(name, PREDEFINED_LINENO, false, null);
         }
 
         public NormalVariableSymbol(String name, int line) {
             super(name, line, VARIABLE);
+            this.isEqual = null;
+            this.initialValue = null;
+        }
+
+        public NormalVariableSymbol(String name, int line, boolean isEqual, ExprContext initialValue) {
+            super(name, line, VARIABLE);
+            this.isEqual = isEqual;
+            this.initialValue = initialValue;
         }
 
         @Override
@@ -245,7 +267,7 @@ public final class SymbolTable implements Scope {
             S extends Symbol<S>> extends AbstractSymbol<S>
             implements Scope {
         SymbolTable scope;
-        Definition defContext;
+        public final Definition defContext;
 
         protected ScopedSymbol(String name, int line, SymbolType symbolType) {
             this(name, line, symbolType, null);
@@ -331,7 +353,12 @@ public final class SymbolTable implements Scope {
             NormalVariableSymbol symbol;
             params = new ArrayList<>(ctx.prodVarDecl().size());
             for (ProdVarDeclContext decl: ctx.prodVarDecl()) {
-                symbol = new NormalVariableSymbol(decl.variable().getText(), getLine(decl));
+                if (decl.expr() == null) {
+                    symbol = new NormalVariableSymbol(decl.variable().getText(), getLine(decl));
+                }
+                else {
+                    symbol = new NormalVariableSymbol(decl.variable().getText(), getLine(decl), true, decl.expr());
+                }
                 params.add(symbol);
                 define(symbol);
             }

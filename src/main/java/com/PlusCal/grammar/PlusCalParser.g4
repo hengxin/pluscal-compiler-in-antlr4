@@ -21,7 +21,7 @@ algorithm
         definitions?
         macro*
         procedure*
-        (body | process+) End Algorithm EOF
+        (compoundStmt | process+) End Algorithm EOF
     ;
 
 procedure
@@ -30,14 +30,14 @@ procedure
                  compoundStmt Semi?
     | {pSyntax}? Procedure name LeftParen (prodVarDecl (Comma prodVarDecl)*)? RightParen
                  prodVarDecls?
-                 body Semi?
+                 compoundStmt Semi?
     ;
 
 macro
     : {cSyntax}? Macro name LeftParen (variable (Comma variable)*)? RightParen
                  compoundStmt Semi?
     | {pSyntax}? Macro name LeftParen (variable (Comma variable)*)?
-                 body End Macro Semi?
+                 compoundStmt End Macro Semi?
     ;
 
 definitions
@@ -46,10 +46,10 @@ definitions
     ;
 
 globalVardecls
-    : (Variable | Variables) vardecl+;
+    : (Variable | Variables) vardecl ((Semi | Comma) vardecl)* (Semi | Comma)?;
 
 vardecl
-    : variable (relop=(Equal | In) expr)? (Semi | Comma);
+    : variable (relop=(Equal | In) expr)?;
 
 process
     : {cSyntax}? (Fair Plus?)? Process LeftParen name relop=(Equal | In) expr RightParen
@@ -57,11 +57,11 @@ process
                  compoundStmt Semi?
     | {pSyntax}? (Fair Plus?)? Process LeftParen name relop=(Equal | In) expr RightParen
                  procVardecls?
-                 body End Process Semi?
+                 compoundStmt End Process Semi?
     ;
 
 procVardecls
-    : (Variable | Variables) vardecl+;
+    : (Variable | Variables) vardecl ((Semi | Comma) vardecl)* (Semi | Comma)?;
 
 prodVarDecls
     : (Variable | Variables) (prodVarDecl (Semi | Comma))+;
@@ -69,42 +69,40 @@ prodVarDecls
 prodVarDecl
     : variable (Equal expr)?;
 
-body
-    : Begin stmt+;
-
 compoundStmt
-    : LeftBrace stmt (Semi stmt)* Semi? RightBrace;
-
+    : {cSyntax}? LeftBrace stmt (Semi stmt)* Semi? RightBrace
+    | {pSyntax}? Begin stmt (Semi stmt)*   // TODO: for stmtseq
+    ;
 
 stmt
     : {cSyntax}? (label Colon (Plus | Minus)?)? (unLabeledStmt | compoundStmt)
-    | {pSyntax}? (label Colon (Plus | Minus)?)? unLabeledStmt Semi
+    | {pSyntax}? (label Colon (Plus | Minus)?)? unLabeledStmt Semi?
     ;
 
 unLabeledStmt
-    : lhs Assign expr (BarBar lhs Assign expr)*                         # assign
+    : lhs Assign expr (BarBar lhs Assign expr)*                             # assign
     | ( {cSyntax}? If LeftParen expr RightParen stmt (Else stmt)?
       | {pSyntax}? If expr Then stmt+
                      (ElseIf expr Then stmt+)*
-                     (Else stmt+)? End If )                             # if
+                     (Else stmt+)? End If )                                 # if
     | ( {cSyntax}? While LeftParen expr RightParen stmt
-      | {pSyntax}? While expr Do stmt+ End While )                      # while
+      | {pSyntax}? While expr Do stmt+ End While )                          # while
     | ( {cSyntax}? Either stmt (Or stmt)+
-      | {pSyntax}? Either stmt+ (Or stmt+)+ End Either )                # either
+      | {pSyntax}? Either stmt+ (Or stmt+)+ End Either )                    # either
     | ( {cSyntax}? With LeftParen inWithVarDecl ((Semi | Comma) inWithVarDecl)* (Semi | Comma)?
                         RightParen stmt
       | {pSyntax}? With (inWithVarDecl (Semi | Comma))+
-                        Do stmt+ End With )                             # with
-    | (Await | When) expr                                               # await
-    | Print expr                                                        # print
-    | Assert expr                                                       # assert
-    | Skip                                                              # skip
-    | Return                                                            # return
-    | Goto label                                                        # goto
-    | Call name LeftParen (expr (Comma expr)*)? RightParen              # call
-    | Call name LeftParen (expr (Comma expr)*)? RightParen Return       # callReturn
-    | Call name LeftParen (expr (Comma expr)*)? RightParen Goto label   # callGoto
-    | name LeftParen (expr (Comma expr)*)? RightParen                   # macroCall
+                        Do stmt+ End With )                                 # with
+    | (Await | When) expr                                                   # await
+    | Print expr                                                            # print
+    | Assert expr                                                           # assert
+    | Skip                                                                  # skip
+    | Call name LeftParen (expr (Comma expr)*)? RightParen Semi Return      # callReturn
+    | Call name LeftParen (expr (Comma expr)*)? RightParen Semi Goto label  # callGoto
+    | Call name LeftParen (expr (Comma expr)*)? RightParen                  # call
+    | Return                                                                # return
+    | Goto label                                                            # goto
+    | name LeftParen (expr (Comma expr)*)? RightParen                       # macroCall
     ;
 
 inWithVarDecl

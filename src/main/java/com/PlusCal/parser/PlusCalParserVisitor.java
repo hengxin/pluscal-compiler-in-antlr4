@@ -1,4 +1,4 @@
-// Generated from D:/final/code/src/main/java/com/PlusCal/grammar\PlusCalParser.g4 by ANTLR 4.9.2
+// Generated from D:/final/pluscal-compiler-in-antlr4/src/main/java/com/PlusCal/grammar\PlusCalParser.g4 by ANTLR 4.9.2
 package com.PlusCal.parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -70,12 +70,6 @@ public interface PlusCalParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitProdVarDecl(PlusCalParser.ProdVarDeclContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link PlusCalParser#body}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBody(PlusCalParser.BodyContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlusCalParser#compoundStmt}.
 	 * @param ctx the parse tree
@@ -152,27 +146,6 @@ public interface PlusCalParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSkip(PlusCalParser.SkipContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code return}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitReturn(PlusCalParser.ReturnContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code goto}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGoto(PlusCalParser.GotoContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code call}
-	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitCall(PlusCalParser.CallContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code callReturn}
 	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
 	 * @param ctx the parse tree
@@ -186,6 +159,27 @@ public interface PlusCalParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitCallGoto(PlusCalParser.CallGotoContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code call}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCall(PlusCalParser.CallContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code return}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitReturn(PlusCalParser.ReturnContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code goto}
+	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGoto(PlusCalParser.GotoContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code macroCall}
 	 * labeled alternative in {@link PlusCalParser#unLabeledStmt}.

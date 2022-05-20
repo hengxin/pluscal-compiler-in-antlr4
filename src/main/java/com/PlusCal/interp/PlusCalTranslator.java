@@ -67,39 +67,25 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
         });
 
         if (!ctx.procedure().isEmpty()) {
-            PlusCalLogger.logInfo("Spec should EXTENDS Sequences");
+            PlusCalLogger.warning("Spec should EXTENDS Sequences");
             for (ProcedureContext procedure: ctx.procedure()) {
                 currentProcedure = procedure.name().getText();
                 visitProcedure(procedure);
-                if (cSyntax) {
-                    addAndCheckLabel(procedure.compoundStmt().stmt());
-                }
-                if (pSyntax) {
-                    addAndCheckLabel(procedure.body().stmt());
-                }
+
+                addAndCheckLabel(procedure.compoundStmt().stmt());
+
             }
             currentProcedure = "";
         }
         if (multi_process) {
             for (ProcessContext proc: ctx.process()) {
                 visitProcess(proc);
-                if (cSyntax) {
-                    addAndCheckLabel(proc.compoundStmt().stmt());
-                }
-                if (pSyntax) {
-                    addAndCheckLabel(proc.body().stmt());
-                }
+                addAndCheckLabel(proc.compoundStmt().stmt());
             }
         }
         else {
-            if (cSyntax) {
-                visitCompoundStmt(ctx.compoundStmt());
-                addAndCheckLabel(ctx.compoundStmt().stmt());
-            }
-            if (pSyntax) {
-                visitBody(ctx.body());
-                addAndCheckLabel(ctx.body().stmt());
-            }
+            visitCompoundStmt(ctx.compoundStmt());
+            addAndCheckLabel(ctx.compoundStmt().stmt());
         }
 
 
@@ -108,14 +94,26 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
 
     @Override
     public Void visitVardecl(VardeclContext ctx) {
-        define(new NormalVariableSymbol(ctx.variable().getText(), getLine(ctx.variable())));
+        if (ctx.expr() == null) {
+            define(new NormalVariableSymbol(ctx.variable().getText(), getLine(ctx.variable())));
+        }
+        else {
+            define(new NormalVariableSymbol(
+                    ctx.variable().getText(), getLine(ctx.variable()), ctx.Equal() != null, ctx.expr()));
+        }
         return null;
     }
 
     @Override
     public Void visitProdVarDecls(ProdVarDeclsContext ctx) {
         for (ProdVarDeclContext decl: ctx.prodVarDecl()) {
-            define(new NormalVariableSymbol(decl.variable().getText(), getLine(decl.variable())));
+            if (decl.expr() == null) {
+                define(new NormalVariableSymbol(decl.variable().getText(), getLine(decl.variable())));
+            }
+            else {
+                define(new NormalVariableSymbol(
+                        decl.variable().getText(), getLine(decl.variable()), true, decl.expr()));
+            }
         }
         return null;
     }
@@ -181,7 +179,13 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
     @Override
     public Void visitCompoundStmt(CompoundStmtContext ctx) {
         for (StmtContext stmt: ctx.stmt()) {
-            visitStmt(stmt);
+            try {
+                visitStmt(stmt);
+            }
+            catch (SemanticException e) {
+                PlusCalLogger.reportError(e.getMessage(), stmt);
+                semanticError = true;
+            }
         }
         return null;
     }
@@ -232,7 +236,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
     @Override
     public Void visitInWithVarDecl(InWithVarDeclContext ctx) {
         try {
-            define(new NormalVariableSymbol(ctx.variable().getText(), getLine(ctx)));
+            define(new NormalVariableSymbol(ctx.variable().getText(), getLine(ctx), ctx.Equal() != null, ctx.expr()));
         }
         catch (DefinitionException e) {
             PlusCalLogger.reportError(e.getMessage(), getLine(ctx));
@@ -589,7 +593,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
                 labelCount++;
                 vLbl.setText(lblText);
             }
-            while (resolve(lblText, SymbolType.LABEL) != null);
+            while (ifDefined(lblText, SymbolType.LABEL));
             lbl.addChild(new TerminalNodeImpl(vLbl));
             lbl.start = lbl.stop = vLbl;
             define(new LabelSymbol(lblText, lbl));
