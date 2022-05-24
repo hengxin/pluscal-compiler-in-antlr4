@@ -31,7 +31,6 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
 
     private String currentProcedure;
 
-
     private PlusCalTranslator() {
 //        _sInterp = new SymbolInterpreter(this);
         checkOnly = false;
@@ -239,7 +238,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
             define(new NormalVariableSymbol(ctx.variable().getText(), getLine(ctx), ctx.Equal() != null, ctx.expr()));
         }
         catch (DefinitionException e) {
-            PlusCalLogger.reportError(e.getMessage(), getLine(ctx));
+            PlusCalLogger.reportError(e.getMessage(), getLine(ctx.variable()), getStartPos(ctx.variable()));
             semanticError = true;
         }
         return null;
@@ -269,7 +268,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
     @Override
     public Void visitCallGoto(CallGotoContext ctx) {
         try {
-            resolve(ctx.name().getText(), SymbolType.PROCEDURE, ctx.expr().size());
+            getCurrentScope().callProcedure(ctx.name().getText());
         } catch (SymbolResolveException e) {
             PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
@@ -287,7 +286,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
     @Override
     public Void visitCall(CallContext ctx) {
         try {
-            resolve(ctx.name().getText(), SymbolType.PROCEDURE, ctx.expr().size());
+            getCurrentScope().callProcedure(ctx.name().getText());
         } catch (SymbolResolveException e) {
             PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
@@ -298,13 +297,13 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
     @Override
     public Void visitCallReturn(CallReturnContext ctx) {
         try {
-            resolve(ctx.name().getText(), SymbolType.PROCEDURE, ctx.expr().size());
+            getCurrentScope().callProcedure(ctx.name().getText());
         } catch (SymbolResolveException e) {
             PlusCalLogger.reportError(e.getMessage(), ctx);
             semanticError = true;
         }
         if (currentProcedure.equals("")) {
-            throw new SemanticException("return statement not in a procedure");
+            throw new SemanticException("return statement not in a procedure", ctx.Return());
         }
         return null;
     }
@@ -312,7 +311,7 @@ public class PlusCalTranslator extends PlusCalParserBaseVisitor<Void> {
     @Override
     public Void visitReturn(ReturnContext ctx) {
         if (currentProcedure.equals("")) {
-            throw new SemanticException("return statement not in a procedure");
+            throw new SemanticException("return statement not in a procedure", ctx.Return());
         }
         return null;
     }

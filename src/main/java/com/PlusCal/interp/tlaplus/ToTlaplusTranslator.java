@@ -2,7 +2,6 @@ package com.PlusCal.interp.tlaplus;
 
 import com.PlusCal.interp.Require;
 import com.PlusCal.interp.symbol.Scope;
-import com.PlusCal.interp.symbol.Symbol;
 import com.PlusCal.interp.symbol.SymbolTable;
 import com.PlusCal.interp.symbol.SymbolType;
 import com.PlusCal.parser.PlusCalParserBaseVisitor;
@@ -20,7 +19,6 @@ import static com.PlusCal.interp.RuleContextUtils.*;
 import static com.PlusCal.interp.tlaplus.Pair.*;
 import static com.PlusCal.interp.PlusCalParams.*;
 
-// TODO: Error label
 final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, State>> {
 
     private final List<String> declaredVariables;
@@ -299,7 +297,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
     @Override
     public Pair<State, State> visitAssign(AssignContext ctx) {
-        // TODO: may be multi assign in then?
+        // TODO: may be multi assign in THEN expr?
         List<ExprContext> exprs = ctx.expr();
         List<LhsContext> lhss = ctx.lhs();
         if (lhss.size() == 1) {
@@ -372,49 +370,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             Pair<State, State> _thenSeq = null, _elseSeq = null;
             State root = null;
             List<StmtContext> stmtSeq = new ArrayList<>();
-//            int i = 3; // beginning index of the first statement
-//            while (ctx.getChild(i) instanceof StmtContext) {
-//                stmtSeq.add((StmtContext) ctx.getChild(i));
-//                i++;
-//            }
             ExprContext expr = null;
-
-//            for (; i < ctx.getChildCount(); i++) {
-//                if (ctx.getChild(i) instanceof TerminalNode) {
-//                    TerminalNode terminalNode = (TerminalNode) ctx.getChild(i);
-//                    if (terminalNode.getSymbol().getType() == Else
-//                            || terminalNode.getSymbol().getType() == ElseIf) {
-//                        _then = visitStmtSequence(stmtSeq).first;
-//                        BranchedState bs = new BranchedState(getContext(), curScope, expr, _then, null);
-//                        if (cur == null) {
-//                            root = bs;
-//                            cur = root;
-//                        }
-//                        else {
-//                            cur.setFalse(bs);
-//                            cur = bs;
-//                        }
-//                        stmtSeq = new ArrayList<>();
-//                    }
-//                    else if (terminalNode.getSymbol().getType() == End) {
-//                        State s = visitStmtSequence(stmtSeq).first;
-//                        if (ctx.Else() == null) {
-//                            root = new BranchedState(getContext(), curScope, expr, s, null);
-//                        }
-//                        else {
-//                            Require.require(cur != null, "current branch is null");
-//                            cur.setFalse(s);
-//                        }
-//                        break;
-//                    }
-//                }
-//                else if (ctx.getChild(i) instanceof ExprContext) {
-//                    expr = (ExprContext) ctx.getChild(i);
-//                }
-//                else if (ctx.getChild(i) instanceof StmtContext) {
-//                    stmtSeq.add((StmtContext) ctx.getChild(i));
-//                }
-//            }
 
             for (int i = ctx.getChildCount() - 3; i >= 0; i--) {
                 ParseTree child = ctx.getChild(i);
@@ -473,12 +429,11 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             @Override
-            public String toString(final boolean multi_process,
-                                   boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+            public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
                 if (ifTrue) {
-                    return _ifSatisfied.toString(multi_process, omitPC, indent, unchanged, hasChanged);
+                    return _ifSatisfied.toString(omitPC, indent, unchanged, hasChanged);
                 }
-                else return super.toString(multi_process, omitPC, indent, unchanged, hasChanged);
+                else return super.toString(omitPC, indent, unchanged, hasChanged);
             }
 
             @Override
@@ -532,17 +487,16 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             @Override
-            public String toString(final boolean multi_process,
-                                   boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+            public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
                 StringBuilder sb = new StringBuilder();
                 Collection<String> c = new ArrayList<>(unchanged);
                 if (!states.isEmpty()){
-                    sb.append("\\/ ").append(states.get(0).toString(multi_process, omitPC, indent + 3, c, hasChanged));
+                    sb.append("\\/ ").append(states.get(0).toString(omitPC, indent + 3, c, hasChanged));
 
                     int n = states.size();
                     for (int i = 1; i < n; i++) {
                         c = new ArrayList<>(unchanged);
-                        sb.append(newLine("\\/ " + states.get(i).toString(multi_process, omitPC, indent + 3, c, hasChanged), indent));
+                        sb.append(newLine("\\/ " + states.get(i).toString(omitPC, indent + 3, c, hasChanged), indent));
                     }
                 }
                 return sb.toString();
@@ -634,8 +588,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
         return makePair(new State(getContext(), curScope) {
             @Override
-            public String toString(final boolean multi_process,
-                                   boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+            public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
                 return indentedExpr(ctx.expr(), indent, multi_process, hasChanged, scope);
             }
         });
@@ -652,8 +605,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             @Override
-            public String toString(final boolean multi_process,
-                                   boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+            public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
                 final int defaultIndent = indent + 7;
                 return "PrintT(" + indentedExpr(expr, defaultIndent, multi_process, hasChanged, scope) + ")";
             }
@@ -677,8 +629,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             @Override
-            public String toString(final boolean multi_process,
-                                   boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+            public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
                 final int defaultIndent = indent + "Assert(".length();
                 return "Assert(" + indentedExpr(expr, defaultIndent, multi_process, hasChanged, scope)
                         + ", " + newLine(assertionFailMsg(), defaultIndent) + ")";
@@ -716,7 +667,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             @Override
-            public String toString(boolean multi_process, boolean omitPC, int indent,
+            public String toString(boolean omitPC, int indent,
                                    Collection<String> unchanged, Collection<String> hasChanged) {
 
                 StringBuilder sb = new StringBuilder();
@@ -802,11 +753,11 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
 
             @Override
-            public String toString(boolean multi_process, boolean omitPC, int indent,
+            public String toString(boolean omitPC, int indent,
                                    Collection<String> unchanged, Collection<String> hasChanged) {
                 this.PCNext = multi_process ? "Head(stack[self]).pc" : "Head(stack).pc";
                 StringBuilder sb = new StringBuilder(
-                        super.toString(multi_process, omitPC, indent, unchanged, hasChanged));
+                        super.toString(omitPC, indent, unchanged, hasChanged));
                 Collection<String> c = new ArrayList<>();
                 ProcedureContext p = ((ProcedureSymbol) scope).defContext;
                 if (p.prodVarDecls() != null) {
@@ -893,8 +844,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process,
-                               boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+        public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             return value;
         }
     }
@@ -941,7 +891,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process, boolean omitPC,
+        public String toString(boolean omitPC,
                                int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuilder sb = new StringBuilder();
             Collection<String> mayChange = getMayChanged();
@@ -950,10 +900,10 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
             if (!states.isEmpty()) {
                 sb.append("/\\ ")
-                        .append(states.get(0).toString(multi_process, omitPC, indent + 3, mayChange, hasChanged));
+                        .append(states.get(0).toString(omitPC, indent + 3, mayChange, hasChanged));
                 for (int i = 1; i < states.size(); i++) {
                     sb.append(newLine("/\\ " +
-                            states.get(i).toString(multi_process, omitPC, indent + 3, mayChange, hasChanged), indent));
+                            states.get(i).toString(omitPC, indent + 3, mayChange, hasChanged), indent));
                 }
             }
 
@@ -1059,9 +1009,6 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
         @Override
         public boolean backTrack(String PCNext) {
-            if (context.equals("bela")) {
-                new String();
-            }
             boolean b = false;
             if (!states.isEmpty()){
                 b = states.get(states.size() - 1).backTrack(PCNext);
@@ -1101,7 +1048,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
             if (omitPC) {
                 Require.require(states.size() == 1);
-                sb.append(states.get(0).toString(multi_process, true, indent, unchanged, new ArrayList<>()));
+                sb.append(states.get(0).toString(true, indent, unchanged, new ArrayList<>()));
             }
             else {
                 if (!multi_process || scope == GLOBAL) {
@@ -1118,7 +1065,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 sb.append(newLine("", indent));
                 List<String> hasChanged = new ArrayList<>();
 
-                sb.append(toString(multi_process, false, indent, unchanged, hasChanged));
+                sb.append(toString(false, indent, unchanged, hasChanged));
 
             }
 
@@ -1127,7 +1074,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process, boolean omitPC,
+        public String toString(boolean omitPC,
                                int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuilder sb = new StringBuilder();
             Collection<String> mayChange = getMayChanged();
@@ -1139,14 +1086,14 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 if (states.get(0) instanceof ConjunctionList) {
                     ConjunctionList cj = (ConjunctionList) states.get(0);
                     if (cj.onlyJump()) {
-                        sb.append(cj.toString(multi_process, omitPC, indent, mayChange, hasChanged));
+                        sb.append(cj.toString(omitPC, indent, mayChange, hasChanged));
                         outConjunct = false;
                     }
                 }
                 else if (states.get(0) instanceof BranchedState) {
                     BranchedState bs = (BranchedState) states.get(0);
                     if (bs.ifTrue) {
-                        sb.append(bs.toString(multi_process, omitPC, indent, unchanged, hasChanged));
+                        sb.append(bs.toString(omitPC, indent, unchanged, hasChanged));
                         outConjunct = false;
                     }
                 }
@@ -1159,7 +1106,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                     else {
                         sb.append("/\\ ");
                     }
-                    sb.append(states.get(i).toString(multi_process, omitPC, indent + 3, mayChange, hasChanged));
+                    sb.append(states.get(i).toString(omitPC, indent + 3, mayChange, hasChanged));
                 }
                 if (PCNext != null && !PCNext.equals("")) {
                     sb.append(initCalledProcedureVariables(indent));
@@ -1200,7 +1147,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(boolean multi_process, boolean omitPC, int indent,
+        public String toString(boolean omitPC, int indent,
                                Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuilder sb = new StringBuilder();
             sb.append("/\\ stack' = ");
@@ -1211,14 +1158,19 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 sb.append("<< [ ");
             }
             final int stackValueBeginIndent = indent + sb.length();
-            sb.append("procedure |-> \"").append(procedure.name()).append("\"");
+            Collection<String> locals = getNamesOfLocalElements(procedure);
+            int longestName = Math.max(9, locals.stream().mapToInt(String::length).max().orElse(0));
+            sb.append("procedure").append(nSpaces(longestName - 9))
+                    .append(" |-> \"").append(procedure.name()).append("\"");
             if (!omitPC) {
                 sb.append(",");
-                sb.append(newLine("pc |-> " + PCNext + "", stackValueBeginIndent));
+                sb.append(newLine("pc", stackValueBeginIndent));
+                sb.append(nSpaces(longestName - 2)).append(" |-> ").append(PCNext);
             }
-            for (String var: getNamesOfLocalElements(procedure)) {
+            for (String var: locals) {
                 sb.append(",");
-                String map = var + " |-> " + var;
+                String varname = procedure.getLocal(var).name();
+                String map = varname + nSpaces(longestName - varname.length()) + " |-> " + varname;
                 sb.append(newLine(map, stackValueBeginIndent));
                 if (multi_process) {
                     String self;
@@ -1259,10 +1211,11 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                         self = "self";
                     }
                     forEachParam.append(self).append("] = ");
-                    forEachParam.append(indentedExpr(params.get(i), forEachParam.length())).append("]");
+                    forEachParam.append(indentedExpr(params.get(i), forEachParam.length(), multi_process, hasChanged, scope))
+                            .append("]");
                 }
                 else {
-                    forEachParam.append(indentedExpr(params.get(i), forEachParam.length()));
+                    forEachParam.append(indentedExpr(params.get(i), forEachParam.length(), false, hasChanged, scope));
                 }
                 sb.append(newLine(forEachParam.toString(), indent));
             }
@@ -1501,7 +1454,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process, boolean omitPC, int indent,
+        public String toString(boolean omitPC, int indent,
                                Collection<String> unchanged, Collection<String> hasChanged) {
             unchanged.remove(variable);
             // TODO: 等号右边智能加括号（现在还是无脑加）
@@ -1627,18 +1580,17 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process,
-                               boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+        public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
 
             StringBuilder sb = new StringBuilder();
             Collection<String> cthen = new ArrayList<>(unchanged);
             Collection<String> celse = new ArrayList<>(unchanged);
             sb.append("IF ");
             sb.append(indentedExpr(condition, sb.length(), multi_process, hasChanged, scope));
-            sb.append(newLine("THEN " + _ifSatisfied.toString(multi_process,
+            sb.append(newLine("THEN " + _ifSatisfied.toString(
                     omitPC, indent + "  THEN ".length(), cthen, new ArrayList<>(hasChanged)), indent + 2));
             if (_else != null) {
-                sb.append(newLine("ELSE " + _else.toString(multi_process,
+                sb.append(newLine("ELSE " + _else.toString(
                         omitPC, indent + "  ELSE ".length(), celse, new ArrayList<>(hasChanged)), indent + 2));
             }
             else {
@@ -1731,7 +1683,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process, boolean omitPC,
+        public String toString(boolean omitPC,
                                int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuffer sb = new StringBuffer();
             sb.append(kind.text).append(" ").append(quantifierBound.get(0).first).append(" \\in ");
@@ -1744,7 +1696,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 sb.append(indentedExpr(quantifierBound.get(i).second, lineIndent, multi_process, hasChanged, scope));
             }
             sb.append(":");
-            sb.append(newLine(predicates.toString(multi_process, omitPC, indent + 2, unchanged, hasChanged),
+            sb.append(newLine(predicates.toString(omitPC, indent + 2, unchanged, hasChanged),
                     indent + 2));
             return sb.toString();
         }
@@ -1777,7 +1729,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
         }
 
         @Override
-        public String toString(final boolean multi_process, boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
+        public String toString(boolean omitPC, int indent, Collection<String> unchanged, Collection<String> hasChanged) {
             StringBuffer sb = new StringBuffer();
             sb.append("LET ");
             for (Map.Entry<String, ExprContext> e: definitions.entrySet()) {
@@ -2117,13 +2069,17 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
             }
             int procIndent = indent + 2;
             if (nextStep.length() > 0) {
-                forNext.append(newLine("\\/ (\\E self \\in ProcSet: " + nextStep + ")", procIndent));
+                if (forNext.length() > indent) {
+                    forNext.append(newLine("\\/ ", procIndent));
+                }
+
+                forNext.append("(\\E self \\in ProcSet: ").append(nextStep).append(")");
             }
 
-            nextStep = new StringBuilder();
             procIndent = indent + "\\/ (\\E self \\in ".length();
             for (ProcessSymbol p: processes) {
                 if (!p.isEqual) {
+                    nextStep = new StringBuilder();
                     if (forNext.length() > indent) {
                         nextStep.append(newLine("\\/ ", indent + 2));
                     }
@@ -2176,19 +2132,19 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                         fairStr = "WF";
                     }
                     if (fairStr != null) {
-                        String begin, end;
-                        String self = "self";
+                        String self, begin, end;
+                        int start, nextConjunctBegin;
                         if (p.isEqual) {
+                            begin = "";
+                            end = "";
                             self = toOriginalText(p.expr);
-                        }
-                        if (!p.isEqual) {
-                            begin = "\\A self \\in ";
-                            end = " : ";
+                            start = getStartPos(p.expr);
                         }
                         else {
-                            // TODO
-                            begin = "LET ";
-                            end = "IN";
+                            begin = "\\A self \\in ";
+                            end = " : ";
+                            self = "self";
+                            start = 0;
                         }
 
                         StringBuilder fVars = new StringBuilder(fairStr + "_vars(");
@@ -2196,7 +2152,7 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                                 .collect(Collectors.toList());
                         if (!minusLabels.isEmpty()) {
                             fVars.append("(pc[");
-                            fVars.append(self);
+                            fVars.append(toIndentedString(self, fVars.length(), start));
                             if (minusLabels.size() == 1) {
                                 fVars.append("] # \"").append(minusLabels.get(0).name()).append("\"");
                             }
@@ -2223,37 +2179,64 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
 
                         fVars.append(name).append(")");
 
-                        StringBuilder forSF;
+                        StringBuilder forSF = null;
                         List<LabelSymbol> plusLabels = p.getLocalLabels().stream().filter(l -> l.plus)
                                 .collect(Collectors.toList());
                         if (fairStr.equals("WF") && plusLabels.size() > 0) {
                             forSF = new StringBuilder();
                             for (int i = 0; i < plusLabels.size(); i++) {
-                                if (i != 0) {
-                                    forSF.append(" /\\ ");
+                                if (i == 0 && minusLabels.size() > 0 && plusLabels.size() > 1) {
+                                    forSF.append("\n");
                                 }
-                                forSF.append("SF_vars(").append(plusLabels.get(i));
+                                else {
+                                    forSF.append(" ");
+                                }
+                                forSF.append("/\\ ");
+                                forSF.append("SF_vars(").append(plusLabels.get(i).name());
                                 if (!p.isEqual) {
                                     forSF.append("(self)");
                                 }
                                 forSF.append(")");
                             }
                         }
-                        // TODO: more for procFairFormulas
 
-                        // TODO: for procedures called
+                        StringBuilder prods = new StringBuilder();
 
-                        // TODO: (only very simplified version)
-                        //    just want to escape from LET expr
-                        if (begin.length() > 0) {
-                            if (procFairFormulas.length() > 0) {
-                                procFairFormulas.append("\n");
-                            }
-                            procFairFormulas.append("/\\ ").append(begin);
-                            procFairFormulas.append(toIndentedString(toOriginalText(p.expr), sb.length(), getStartPos(p.expr)));
-                            procFairFormulas.append(end).append(fVars);
+                        if (procFairFormulas.length() > 0) {
+                            procFairFormulas.append("\n");
                         }
 
+                        procFairFormulas.append("/\\ ").append(begin);
+                        if (!p.isEqual) {
+                            procFairFormulas.append(indentedExpr(p.expr, procFairFormulas.length()));
+                        }
+                        procFairFormulas.append(end);
+
+                        for (ProcedureSymbol procedure: p.calledProcedures()) {
+                            String prefix = "/\\ " + fairStr + "_vars(" + procedure.name() + "(";
+                            if (prods.length() > 0) {
+                                prods.append("\n");
+                            }
+                            prods.append(prefix)
+                                    .append(toIndentedString(self, prefix.length(), start)).append("))");
+                        }
+
+                        if (prods.length() > 0) {
+                            nextConjunctBegin = procFairFormulas.length();
+                            procFairFormulas.append("/\\ ")
+                                    .append(toIndentedString(fVars.toString(), nextConjunctBegin + 3, 0));
+                            if (forSF != null) {
+                                procFairFormulas.append(toIndentedString(forSF.toString(), nextConjunctBegin, 0));
+                            }
+                            procFairFormulas.append(newLine("", nextConjunctBegin))
+                                    .append(toIndentedString(prods.toString(), nextConjunctBegin, 0));
+                        }
+                        else {
+                            procFairFormulas.append(fVars);
+                            if (forSF != null) {
+                                procFairFormulas.append(forSF);
+                            }
+                        }
                     }
                 }
             }
@@ -2261,14 +2244,14 @@ final class ToTlaplusTranslator extends PlusCalParserBaseVisitor<Pair<State, Sta
                 sb.append(safetyFormula).append("\n");
             }
             else {
-                // TODO: more
-                sb.append("/\\ ").append(safetyFormula).append("\n");
+                sb.append("/\\ ").append(safetyFormula);
                 int indent = "Spec == ".length();
                 if (wfVarsNext != null) {
-                    sb.append("        /\\ WF_vars(Next)");
+                    sb.append(newLine("/\\ WF_vars(Next)", indent));
                 }
-                sb.append(nSpaces(indent))
-                        .append(toIndentedString(procFairFormulas.toString(), indent, 0));
+                if (procFairFormulas.length() > 0) {
+                    sb.append(newLine(toIndentedString(procFairFormulas.toString(), indent, 0), indent));
+                }
                 sb.append("\n");
             }
         }

@@ -6,6 +6,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.PlusCal.interp.RuleContextUtils.*;
+
 public class PlusCalLogger extends BaseErrorListener {
 
     private static final PlusCalLogger pcalLogger = new PlusCalLogger();
@@ -53,11 +55,11 @@ public class PlusCalLogger extends BaseErrorListener {
     }
 
     public static void reportError(String msg, ParserRuleContext ctx) {
-        reportError(msg, ctx.start.getLine());
+        reportError(msg, getLine(ctx), getStartPos(ctx));
     }
 
     public static void reportError(String msg, TerminalNode terminalNode) {
-        reportError(msg, terminalNode.getSymbol().getLine());
+        reportError(msg, terminalNode.getSymbol().getLine(), terminalNode.getSymbol().getCharPositionInLine());
     }
 
     public static void warning(String msg) {
@@ -68,7 +70,7 @@ public class PlusCalLogger extends BaseErrorListener {
         logger.warning("line " + line + ": " + msg);
     }
 
-    public static void reportError(String msg, int line) {
-        System.err.println("ERROR in line " + line + ": " + msg + "!");
+    public static void reportError(String msg, int line, int column) {
+        System.err.println("ERROR in line " + line + ", column " + column + ": " + msg + "!");
     }
 }

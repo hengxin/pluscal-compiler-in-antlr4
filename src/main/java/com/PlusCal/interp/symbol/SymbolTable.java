@@ -18,8 +18,8 @@ public final class SymbolTable implements Scope {
     private static ParameterizedSymbol toBeParameterizedSymbol = null;
     private static final Set<String> namespace = new HashSet<>();
 
-    private static SymbolTable currentScope = null;
-    static SymbolTable root;
+    private static Scope currentScope = null;
+    static Scope root;
     static final Map<String, ProcedureSymbol> procedures = new LinkedHashMap<>();
     static final Map<String, ProcessSymbol> processes = new LinkedHashMap<>();
     static final Map<String, LabelSymbol> labels = new LinkedHashMap<>();
@@ -36,15 +36,25 @@ public final class SymbolTable implements Scope {
 
     public static SymbolTable createScope() {
         currentScope = new SymbolTable(currentScope);
-        return currentScope;
+        return (SymbolTable) currentScope;
     }
 
     public static void exitScope() {
         currentScope = currentScope.getEnclosingScope();
     }
 
-    public static SymbolTable getCurrentScope() {
+    public static Scope getCurrentScope() {
         return currentScope;
+    }
+
+    private static SymbolTable getTab(Scope scope) {
+        if (scope == null) {
+            return null;
+        }
+        if (scope instanceof SymbolTable) {
+            return (SymbolTable) scope;
+        }
+        return ((ScopedSymbol) scope).scope;
     }
 
     /**
@@ -80,7 +90,7 @@ public final class SymbolTable implements Scope {
         }
 
         if (symbol.type() == LABEL) {
-            currentScope.labelsInThisScope.putIfAbsent(symbol.name(), (LabelSymbol) symbol);
+            currentScope.addLabel((LabelSymbol) symbol);
         }
 
         if (symbol instanceof ParameterizedSymbol) {
@@ -103,12 +113,12 @@ public final class SymbolTable implements Scope {
      * @throws SymbolResolveException
      * @return
      */
-    public static <T extends Symbol> T resolve(String symbol,
-                                               SymbolType<T> symbolType,
-                                               int params, boolean requireNonNull)
+    static <T extends Symbol> T resolve(String symbol,
+                                           SymbolType<T> symbolType,
+                                           int params, boolean requireNonNull)
             throws SymbolResolveException {
         if (symbolType == LABEL && (symbol.equals("Done") || symbol.equals("Error")))
-            throw new SymbolResolveException("Done or Error cannot be used as actual labels");
+            throw new SymbolResolveException("Done or Error cannot be used as explicit labels");
 
         T target = symbolType.getSymbolOfType(symbol);
         String typeName = symbolType.name;
@@ -160,11 +170,13 @@ public final class SymbolTable implements Scope {
     private final SymbolTable enclosingScope;
     final Map<String, VariableSymbol> variables;
     final Map<String, LabelSymbol> labelsInThisScope;
+    final Collection<ProcedureSymbol> proceduresCalled;
 
-    private SymbolTable(SymbolTable enclosingScope) {
-        this.enclosingScope = enclosingScope;
+    private SymbolTable(Scope enclosingScope) {
+        this.enclosingScope = getTab(enclosingScope);
         this.variables = new LinkedHashMap<>();
         this.labelsInThisScope = new LinkedHashMap<>();
+        this.proceduresCalled = new HashSet<>();
     }
 
     @Override
@@ -179,6 +191,23 @@ public final class SymbolTable implements Scope {
         if (getEnclosingScope() != null)
             return getEnclosingScope().get(symbolName);
         return null;
+    }
+
+    @Override
+    public void addLabel(LabelSymbol label) {
+        labelsInThisScope.putIfAbsent(label.name(), label);
+    }
+
+    @Override
+    public void callProcedure(String procedure) {
+        ProcedureSymbol p = procedures.get(procedure);
+        proceduresCalled.add(p);
+        proceduresCalled.addAll(p.calledProcedures());
+    }
+
+    @Override
+    public Collection<ProcedureSymbol> calledProcedures() {
+        return Collections.unmodifiableCollection(proceduresCalled);
     }
 
     @Override
@@ -284,8 +313,13 @@ public final class SymbolTable implements Scope {
             return scope.get(s);
         }
 
-        public SymbolTable getScope() {
-            return scope;
+        public void callProcedure(String procedure) {
+            scope.callProcedure(procedure);
+        }
+
+        @Override
+        public void addLabel(LabelSymbol label) {
+            scope.addLabel(label);
         }
 
         @Override
@@ -296,6 +330,11 @@ public final class SymbolTable implements Scope {
         @Override
         public Collection<VariableSymbol> getLocalElements() {
             return scope.getLocalElements();
+        }
+
+        @Override
+        public Collection<ProcedureSymbol> calledProcedures() {
+            return Collections.unmodifiableCollection(scope.proceduresCalled);
         }
 
         @Override
@@ -311,6 +350,11 @@ public final class SymbolTable implements Scope {
         @Override
         public List<LabelSymbol> getLocalLabels() {
             return scope.getLocalLabels();
+        }
+
+        @Override
+        public Scope getEnclosingScope() {
+            return scope.getEnclosingScope();
         }
     }
 
@@ -337,10 +381,11 @@ public final class SymbolTable implements Scope {
 
     }
 
-    public static class ProcedureSymbol extends ScopedSymbol<ProcedureContext, ProcedureSymbol>
+    public static final class ProcedureSymbol extends ScopedSymbol<ProcedureContext, ProcedureSymbol>
             implements ParameterizedSymbol<ProcedureSymbol, NormalVariableSymbol>{
-        protected List<NormalVariableSymbol> params;
-        protected int paramNum;
+        private final List<NormalVariableSymbol> params;
+        private int paramNum;
+        private final List<ProcedureSymbol> callers;
 
         public ProcedureSymbol(String name, ProcedureContext ctx) {
             this(name, getLine(ctx), ctx);
@@ -362,8 +407,24 @@ public final class SymbolTable implements Scope {
                 params.add(symbol);
                 define(symbol);
             }
+            callers = new ArrayList<>();
             exitScope();
             endDefiningParameterizedSymbol();
+        }
+
+        void calledBy(ProcedureSymbol scope) {
+            if (scope != null) {
+                callers.add(scope);
+            }
+        }
+
+        @Override
+        public void callProcedure(String procedure) {
+            super.callProcedure(procedure);
+            procedures.get(procedure).calledBy(this);
+            for (ProcedureSymbol caller: callers) {
+                calledProcedures().stream().map(AbstractSymbol::name).forEach(caller::callProcedure);
+            }
         }
 
         @Override
@@ -383,7 +444,6 @@ public final class SymbolTable implements Scope {
 
         @Override
         public void addParameter(NormalVariableSymbol param) {
-            // TODO
             params.add(param);
             if (params.size() == paramNum) endDefiningParameterizedSymbol();
         }
@@ -407,6 +467,8 @@ public final class SymbolTable implements Scope {
             this.isEqual = ctx.Equal() != null;
             this.expr = ctx.expr();
         }
+
+
 
         @Override
         public String toString() {

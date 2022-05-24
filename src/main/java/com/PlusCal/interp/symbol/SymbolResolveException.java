@@ -12,10 +12,6 @@ public class SymbolResolveException extends SemanticException {
         super(msg);
     }
 
-    public SymbolResolveException(Throwable cause) {
-        super(cause);
-    }
-
     public SymbolResolveException(String msg, Throwable cause) {
         super(msg, cause);
     }

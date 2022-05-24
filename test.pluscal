@@ -1,92 +1,37 @@
---algorithm FIFO {
-  variables
-    valSet = 0..3,
-    inchan \in [val : valSet,
-                rdy : 0..1,
-                ack : 0..1],
-
-    outchan \in [val : valSet,
-                 rdy : 0..1,
-                 ack : 0..1];
-
-    q = <<>>;  \* internal queue of the Buffer - a sequence of vals
-
-  macro CheckInvariants(chan) {
-    assert (chan.val \in valSet);
-    assert (chan.rdy \in 0..1);
-    assert (chan.ack \in 0..1);
-    assert (q \in Seq(valSet));
+--algorithm euclid {
+  variables m=30, n=18, u=m, v=n, v_ini=v;
+  define {
+    Divides(i,j) == \E k \in 0..j : j = i * k
+    IsGCD(i,j,k) == Divides(i,j) /\ Divides(i,k) /\ \A r \in 0..j \cup 0..k : Divides(r,j) /\ Divides(r,k) => Divides(r,i)
+  }
+  procedure p1(v1, v2=2)
+  variables v11, v12 = 3;
+  {
+    r0: assert TRUE;
+    r1: call p2(v11, v12, v2);
+    goto r0;
+    r2: return;
   }
 
-  process (SSend = "ssend")
-    variable oldrdy;
+  procedure p2(u1, u2, u3)
   {
-    ss0:  while (TRUE) {
-    ss1:    await inchan.rdy = inchan.ack;
-    ss2:    oldrdy := inchan.rdy;
-            inchan.rdy := 1 - inchan.rdy;
-            \* We do not assign chan.val here -> we let TLC pick all
-            \* possible vals between in valSet
+    q0: assert TRUE;
+    return;
+  }
 
-            print <<inchan, "SSend">>;
-            CheckInvariants(inchan);
-            assert (inchan.rdy # oldrdy);
-            assert (inchan.rdy # inchan.ack);
-          }
+  fair process (p = 1..5) {
+    bela: while (u # 0) {
+      iff:+ if (u < v)
+        u := v || v := u;
+      tmp:+ u := u - v;
+    };
+    print <<m,v_ini,"have gdc",v>>;
+    call p1(1,2);
+    (* correctness condition *)
+    fin: assert IsGCD(v,m,n)
+  }
 
-  }; \* end process SSend
-
-  process (BufRecv = "bufrecv")
-        variable oldack;
-  {
-    br0:  while (TRUE) {
-    br1:    await inchan.rdy # inchan.ack /\ Len(q) < MaxBufSize;
-    br2:    oldack := inchan.ack;
-            inchan.ack := 1 - inchan.ack;
-            q := Append(q, inchan.val);
-            \* q := q \o inchan.val;
-
-            print <<inchan, "BufRecv", q>>;
-            CheckInvariants(inchan);
-            assert (inchan.ack # oldack);
-            assert (inchan.rdy = inchan.ack);
-          }
-  }; \* end process BufRecv
-
-  process (BufSend = "bufsend")
-    variable oldrdy;
-  {
-    bs0:  while (TRUE) {
-    bs1:    await outchan.rdy = outchan.ack;
-    bs2:    oldrdy := outchan.rdy;
-            outchan.rdy := 1 - outchan.rdy;
-            \* We do not assign chan.val here -> we let TLC pick all
-            \* possible vals between in valSet
-
-            print <<outchan, "BufSend">>;
-            CheckInvariants(outchan);
-            assert (outchan.rdy # oldrdy);
-            assert (outchan.rdy # outchan.ack);
-          }
-
-  }; \* end process BufSend
-
-
-  process (RRecv = "rrecv")
-        variable oldack, rval;
-  {
-    rr0:  while (TRUE) {
-    rr1:    await outchan.rdy # outchan.ack /\ Len(q) > 0;
-    rr2:    oldack := outchan.ack;
-            outchan.ack := 1 - outchan.ack;
-            rval := Head(q);
-            q := Tail(q);
-
-            print <<outchan, "RRecv", rval>>;
-            CheckInvariants(outchan);
-            assert (outchan.ack # oldack);
-            assert (outchan.rdy = outchan.ack);
-          }
-  }; \* end process RRecv
-
+  fair+ process (s \in 1..10) {
+    out: assert TRUE;
+  }
 }

@@ -39,12 +39,12 @@ A Compiler for PlusCal in ANTLR4
 
 ### tla+ translation
 
-- [ ] gen Spec
+- [x] gen Spec
     - [x] safety formula
     - [x] minus labels
     - [x] fair process
-    - [ ] plus labels
-    - [ ] fair algorithm
+    - [x] plus labels
+    - [x] fair algorithm
 - [x] State definition
 - [x] unchanged variables
 - [x] omit PC

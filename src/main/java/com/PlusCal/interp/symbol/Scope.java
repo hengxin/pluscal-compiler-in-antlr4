@@ -1,6 +1,7 @@
 package com.PlusCal.interp.symbol;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static com.PlusCal.interp.symbol.SymbolTable.*;
@@ -10,9 +11,17 @@ public interface Scope {
 
     Scope GLOBAL = SymbolTable.root;
 
+    Scope getEnclosingScope();
+
     VariableSymbol defineVariable(VariableSymbol symbol);
 
     VariableSymbol get(String name);
+
+    void addLabel(LabelSymbol label);
+
+    void callProcedure(String procedure);
+
+    Collection<ProcedureSymbol> calledProcedures();
 
     Collection<VariableSymbol> getLocalElements();
 

@@ -18,11 +18,11 @@ public final class SymbolType<S extends Symbol> {
      */
     public static final SymbolType<NormalVariableSymbol> VARIABLE
             = new SymbolType<>("variable", NormalVariableSymbol.class,
-            (s) -> !(s.name.equals("pc") || s.name.equals("stack") || s.name.equals("self")),
+            (s) -> !(s.name().equals("pc") || s.name().equals("stack") || s.name().equals("self")),
             () -> ((s) -> getCurrentScope().defineVariable(s)),
             () -> ((s) -> (NormalVariableSymbol) getCurrentScope().get(s)),
-            () -> getCurrentScope().variables.values().stream().
-                    filter((s) -> s instanceof NormalVariableSymbol).map(s -> (NormalVariableSymbol)s).
+            () -> getCurrentScope().getLocalElements().stream().filter(
+                    (s) -> s instanceof NormalVariableSymbol).map(s -> (NormalVariableSymbol)s).
                     collect(Collectors.toList()));
 
     /**
@@ -60,7 +60,7 @@ public final class SymbolType<S extends Symbol> {
             = new SymbolType<>("operator", OperatorSymbol.class,
             () -> ((s) -> getCurrentScope().defineVariable(s)),
             () -> ((s) -> (OperatorSymbol) getCurrentScope().get(s)),
-            () -> getCurrentScope().variables.values().stream().
+            () -> getCurrentScope().getLocalElements().stream().
                     filter((s) -> s instanceof OperatorSymbol).map(s -> (OperatorSymbol)s).
                     collect(Collectors.toList()));
 

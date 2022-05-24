@@ -74,7 +74,7 @@ final class Macros {
             this.ctx = ctx;
             hasError = !validDefinition(ctx.compoundStmt().stmt());
             if (hasError) {
-                throw new DefinitionException("Error macro definition");
+                throw new DefinitionException("Error macro definition", ctx);
             }
             else {
                 String[] params = toStringList(ctx.variable());
@@ -130,7 +130,7 @@ final class Macros {
             boolean b = true;
             if (labeled(stmtDef)) {
                 PlusCalLogger.reportError("a macro definition may contain no labels",
-                        getLine(stmtDef));
+                        getLine(stmtDef), getStartPos(stmtDef));
                 b = false;
             }
             if (stmtDef.unLabeledStmt() != null) {
@@ -138,7 +138,7 @@ final class Macros {
                 if (isOneOfStmtType(stmtDef,
                         ReturnContext.class, CallContext.class, GotoContext.class)) {
                     PlusCalLogger.reportError("a macro definition may contain no while, call, return or goto statement",
-                            getLine(stmtDef.unLabeledStmt()));
+                            getLine(stmtDef), getStartPos(stmtDef.label()));
                     return false;
                 }
                 return b;

@@ -42,7 +42,7 @@ abstract class State {
         throw new UnsupportedOperationException();
     }
 
-    public abstract String toString(final boolean multi_process, boolean omitPC, int indent,
+    public abstract String toString(boolean omitPC, int indent,
                                     Collection<String> unchanged, Collection<String> hasChanged);
 
     public boolean backTrack(String PCNext) {
